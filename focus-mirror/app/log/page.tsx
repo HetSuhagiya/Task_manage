@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiTrash2, FiEdit2 } from "react-icons/fi";
 import { FaFire } from "react-icons/fa";
 import { useLockedTaskTimer } from "./useLockedTaskTimer";
+import toast, { Toaster } from 'react-hot-toast';
 
 const categories = [
   "Study",
@@ -36,6 +37,19 @@ const quoteOfTheDay = quotes[(today.getFullYear() + today.getMonth() + today.get
 
 export default function LogPage() {
   const [logs, setLogs] = useState<any[] | undefined>(undefined);
+  const [completedLogs, setCompletedLogs] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('focusmirror-completed-logs');
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return [];
+        }
+      }
+    }
+    return [];
+  });
   const [form, setForm] = useState({
     task: "",
     duration: "",
@@ -57,6 +71,15 @@ export default function LogPage() {
     startTimer,
     stopTimer,
   } = useLockedTaskTimer();
+
+  const [mute, setMute] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('focusmirror-mute');
+      return stored === 'true';
+    }
+    return false;
+  });
+  const chimeRef = useRef<HTMLAudioElement | null>(null);
 
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -110,8 +133,51 @@ export default function LogPage() {
     { icon: <FaFire />, label: "5 – Deep Focus" },
   ];
 
+  const notifyTaskComplete = (taskName: string) => {
+    toast.custom((t) => (
+      <div
+        className={`px-6 py-4 rounded-2xl shadow-xl border border-blue-700/40 bg-[#181c2b] text-blue-100 font-semibold flex items-center gap-3 transition-all ${t.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'} animate-glow`}
+        style={{ minWidth: 260, boxShadow: '0 0 16px 2px #6366f1aa' }}
+        onMouseEnter={() => toast.dismiss(t.id)}
+      >
+        <span className="text-green-400 text-xl">✔️</span>
+        <span>Task "{taskName}" completed!</span>
+      </div>
+    ), { duration: 4000 });
+    if (!mute && chimeRef.current) {
+      chimeRef.current.currentTime = 0;
+      chimeRef.current.play();
+    }
+  };
+
+  useEffect(() => {
+    if (logs && activeTaskId !== null) {
+      const activeLog = logs.find((log) => log.id === activeTaskId);
+      if (activeLog) {
+        const durationSec = parseInt(activeLog.duration, 10) * 60;
+        if (elapsed >= durationSec) {
+          notifyTaskComplete(activeLog.task);
+          stopTimer();
+          setLogs((prev) => prev?.filter((log) => log.id !== activeTaskId));
+          setCompletedLogs((prev) => [...prev, { ...activeLog, completedAt: Date.now() }]);
+        }
+      }
+    }
+  }, [elapsed, logs, activeTaskId, stopTimer]);
+
+  useEffect(() => {
+    if (logs !== undefined) {
+      localStorage.setItem('focusmirror-logs', JSON.stringify(logs));
+    }
+  }, [logs]);
+
+  useEffect(() => {
+    localStorage.setItem('focusmirror-completed-logs', JSON.stringify(completedLogs));
+  }, [completedLogs]);
+
   useEffect(() => {
     const stored = localStorage.getItem('focusmirror-logs');
+    const storedCompleted = localStorage.getItem('focusmirror-completed-logs');
     if (stored) {
       try {
         setLogs(JSON.parse(stored));
@@ -121,16 +187,37 @@ export default function LogPage() {
     } else {
       setLogs([]);
     }
-  }, []);
-
-  useEffect(() => {
-    if (logs !== undefined) {
-      localStorage.setItem('focusmirror-logs', JSON.stringify(logs));
+    if (storedCompleted) {
+      try {
+        setCompletedLogs(JSON.parse(storedCompleted));
+      } catch {
+        setCompletedLogs([]);
+      }
+    } else {
+      setCompletedLogs([]);
     }
-  }, [logs]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] relative pb-16 w-full">
+      <Toaster position="top-center" toastOptions={{
+        style: { background: '#181c2b', color: '#c7d2fe', border: '1px solid #6366f1', boxShadow: '0 0 16px 2px #6366f1aa' },
+        duration: 4000,
+      }} />
+      <audio ref={chimeRef} src="/chime.wav" preload="auto" />
+      {/* Mute toggle */}
+      <button
+        className="absolute top-6 right-6 z-50 px-3 py-2 rounded-full bg-black/40 border border-blue-700 text-blue-200 hover:bg-blue-900/40 transition shadow"
+        onClick={() => {
+          setMute((m) => {
+            localStorage.setItem('focusmirror-mute', (!m).toString());
+            return !m;
+          });
+        }}
+        title={mute ? 'Unmute notifications' : 'Mute notifications'}
+      >
+        {mute ? '🔇 Muted' : '🔔 Sound On'}
+      </button>
       {/* Blurred gradient background behind card */}
       <motion.div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[90vw] h-72 bg-gradient-to-tr from-blue-700/30 via-indigo-500/20 to-purple-700/20 blur-3xl rounded-full z-0"
@@ -311,6 +398,8 @@ export default function LogPage() {
                   logs.map((log) => {
                     const isActive = activeTaskId === log.id;
                     const isEditing = editingId === log.id;
+                    const isCompleted = completedLogs.some((c) => c.id === log.id);
+                    const durationSec = parseInt(log.duration, 10) * 60;
                     return (
                       <tr
                         key={log.id}
@@ -322,9 +411,15 @@ export default function LogPage() {
                             <input
                               type="checkbox"
                               checked={isActive}
-                              disabled={isLocked && !isActive}
+                              disabled={isLocked && !isActive || isCompleted}
                               onChange={() => {
-                                if (!isLocked) startTimer(log.id);
+                                if (!isLocked && !isCompleted) {
+                                  startTimer(log.id, durationSec, () => {
+                                    stopTimer();
+                                    setLogs((prev) => prev?.filter((l) => l.id !== log.id));
+                                    setCompletedLogs((prev) => [...prev, { ...log, completedAt: Date.now() }]);
+                                  });
+                                }
                               }}
                               className="w-5 h-5 accent-blue-500 cursor-pointer disabled:cursor-not-allowed flex-shrink-0"
                               aria-label="Mark as currently doing"
@@ -359,7 +454,7 @@ export default function LogPage() {
                               animate={{ scale: [0.9, 1.05, 0.98, 1], opacity: [0.7, 1, 0.7] }}
                               transition={{ duration: 1.2, repeat: Infinity }}
                             >
-                              +{Math.floor(elapsed / 60)} min {elapsed % 60 > 0 ? `${elapsed % 60} sec` : "active"}
+                              +{Math.floor(Math.min(elapsed, durationSec) / 60)} min {Math.min(elapsed, durationSec) % 60 > 0 ? `${Math.min(elapsed, durationSec) % 60} sec` : "active"}
                             </motion.span>
                           )}
                         </td>
@@ -481,7 +576,78 @@ export default function LogPage() {
             </table>
           </div>
         </section>
+        {/* Completed Tasks Section */}
+        <section className="w-full max-w-6xl z-10 relative mt-8">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-bold text-blue-200">Completed Tasks</h2>
+            <button
+              className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 text-white font-semibold shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to clear all completed tasks?')) {
+                  setCompletedLogs([]);
+                  localStorage.setItem('focusmirror-completed-logs', JSON.stringify([]));
+                }
+              }}
+              disabled={completedLogs.length === 0}
+              style={{ opacity: completedLogs.length === 0 ? 0.5 : 1 }}
+            >
+              Clear Completed
+            </button>
+          </div>
+          <div className="overflow-x-auto rounded-2xl shadow-lg border border-white/10 bg-white/5 backdrop-blur-md">
+            <table className="min-w-full text-left text-sm text-blue-100">
+              <thead>
+                <tr className="bg-white/10">
+                  <th className="px-4 py-3 font-semibold tracking-wide">Task</th>
+                  <th className="px-2 py-3 font-semibold tracking-wide text-center">Duration</th>
+                  <th className="px-2 py-3 font-semibold tracking-wide text-center">Category</th>
+                  <th className="px-2 py-3 font-semibold tracking-wide text-center">Focus</th>
+                  <th className="px-2 py-3 font-semibold tracking-wide text-center">Value</th>
+                  <th className="px-2 py-3 font-semibold tracking-wide text-center">Completed At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {completedLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-blue-300">No tasks have been completed yet.</td>
+                  </tr>
+                ) : (
+                  completedLogs.map((log) => (
+                    <tr key={log.id} className="transition-all duration-200 border-b border-white/10 hover:bg-blue-900/10">
+                      <td className="px-4 py-2 max-w-[260px] align-middle">
+                        <span className="font-semibold text-sm md:text-base text-white overflow-hidden text-ellipsis whitespace-nowrap" style={{ display: 'inline-block', maxWidth: 180 }} title={log.task}>{log.task}</span>
+                      </td>
+                      <td className="px-2 py-2 text-center align-middle">
+                        <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-200 font-bold text-xs text-center w-[80px] inline-block truncate" title={`${log.duration} min`}>⏱ {log.duration} min</span>
+                      </td>
+                      <td className="px-2 py-2 text-center align-middle">
+                        <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-200 font-bold text-xs text-center w-[80px] inline-block truncate" title={log.category}>{log.category}</span>
+                      </td>
+                      <td className="px-2 py-2 text-center align-middle">
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-900/40 text-indigo-200 font-bold flex items-center gap-1 text-xs w-[70px] text-center inline-flex truncate" title={`Focus: ${log.focus}`}>{focusEmojis[log.focus - 1]} {log.focus}/5</span>
+                      </td>
+                      <td className="px-2 py-2 text-center align-middle">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold w-[70px] text-center inline-block truncate ${log.value === "High" ? "bg-green-700/40 text-green-200" : log.value === "Medium" ? "bg-yellow-700/40 text-yellow-200" : "bg-red-700/40 text-red-200"}`} title={log.value}>{log.value}</span>
+                      </td>
+                      <td className="px-2 py-2 text-center align-middle">
+                        <span className="text-xs text-blue-300">{log.completedAt ? new Date(log.completedAt).toLocaleString() : ""}</span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
+      <style jsx global>{`
+@keyframes glow {
+  0% { box-shadow: 0 0 8px 2px #6366f1aa; }
+  50% { box-shadow: 0 0 24px 6px #6366f1cc; }
+  100% { box-shadow: 0 0 8px 2px #6366f1aa; }
+}
+.animate-glow { animation: glow 2s infinite; }
+`}</style>
     </div>
   );
 }

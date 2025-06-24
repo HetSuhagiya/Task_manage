@@ -4,7 +4,7 @@ interface LockedTaskTimer {
   activeTaskId: number | null;
   elapsed: number;
   isLocked: boolean;
-  startTimer: (taskId: number) => void;
+  startTimer: (taskId: number, durationSec: number, onComplete?: () => void) => void;
   stopTimer: () => void;
 }
 
@@ -16,6 +16,8 @@ export function useLockedTaskTimer(): LockedTaskTimer {
   const [isLocked, setIsLocked] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimestampRef = useRef<number | null>(null);
+  const durationRef = useRef<number | null>(null);
+  const onCompleteRef = useRef<(() => void) | undefined>(undefined);
 
   // Load from storage on mount
   useEffect(() => {
@@ -40,7 +42,21 @@ export function useLockedTaskTimer(): LockedTaskTimer {
       if (!intervalRef.current) {
         intervalRef.current = setInterval(() => {
           if (startTimestampRef.current) {
-            setElapsed(Math.floor((Date.now() - startTimestampRef.current) / 1000));
+            const newElapsed = Math.floor((Date.now() - startTimestampRef.current) / 1000);
+            setElapsed(newElapsed);
+            if (durationRef.current !== null && newElapsed >= durationRef.current) {
+              // Auto-stop and call onComplete
+              if (onCompleteRef.current) onCompleteRef.current();
+              setActiveTaskId(null);
+              setIsLocked(false);
+              setElapsed(0);
+              startTimestampRef.current = null;
+              durationRef.current = null;
+              onCompleteRef.current = undefined;
+              localStorage.removeItem(STORAGE_KEY);
+              clearInterval(intervalRef.current!);
+              intervalRef.current = null;
+            }
           }
         }, 1000);
       }
@@ -72,18 +88,21 @@ export function useLockedTaskTimer(): LockedTaskTimer {
     }
   }, [activeTaskId, isLocked, elapsed]);
 
-  const startTimer = useCallback((taskId: number) => {
+  const startTimer = useCallback((taskId: number, durationSec: number, onComplete?: () => void) => {
     if (isLocked) return;
     setActiveTaskId(taskId);
     setIsLocked(true);
     startTimestampRef.current = Date.now();
     setElapsed(0);
+    durationRef.current = durationSec;
+    onCompleteRef.current = onComplete;
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         taskId,
         startTimestamp: Date.now(),
         elapsed: 0,
+        duration: durationSec,
       })
     );
   }, [isLocked]);

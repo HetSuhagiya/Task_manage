@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { HiOutlineDocumentText, HiOutlineAdjustmentsHorizontal, HiOutlineChartBar, HiOutlineArrowPath, HiOutlineArrowRight } from "react-icons/hi2";
 import Aurora from "./Aurora";
+import React, { Fragment } from "react";
 
 export default function Home() {
   return (
@@ -116,9 +117,8 @@ export default function Home() {
             icon: HiOutlineArrowPath,
             label: "Reflect & reset"
           }].map(({ icon: Icon, label }, idx, arr) => (
-            <>
+            <Fragment key={label}>
               <motion.div
-                key={label}
                 className="flex flex-col items-center group"
                 variants={{
                   hidden: { opacity: 0, y: 20 },
@@ -153,7 +153,7 @@ export default function Home() {
                   />
                 </motion.div>
               )}
-            </>
+            </Fragment>
           ))}
         </motion.div>
       </main>
