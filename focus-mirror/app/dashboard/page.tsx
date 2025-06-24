@@ -191,8 +191,8 @@ export default function Dashboard() {
             startDate={getDateNDaysAgo(364)}
             endDate={new Date()}
             values={heatmapData}
-            classForValue={v => v ? COLOR_SCALE[v.count] + " rounded" : "bg-gray-800 rounded"}
-            tooltipDataAttrs={v => {
+            classForValue={(v: any) => v ? COLOR_SCALE[v.count] + " rounded" : "bg-gray-800 rounded"}
+            tooltipDataAttrs={(v: any) => {
               if (!v || !v.date) return { 'data-tip': "No entry" };
               const h = Math.floor((v.totalMinutes || 0) / 60);
               const m = (v.totalMinutes || 0) % 60;
