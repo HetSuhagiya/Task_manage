@@ -28,6 +28,17 @@ const COLOR_SCALE = [
   "bg-purple-700" // deep
 ];
 
+// Category color mapping for charts and legend
+const categoryColorMap: Record<string, { hex: string; bg: string; text: string }> = {
+  "Study":      { hex: "#3B82F6", bg: "bg-blue-500/20",    text: "text-blue-300" },
+  "Job Search": { hex: "#8B5CF6", bg: "bg-purple-500/20",  text: "text-purple-300" },
+  "Passive":    { hex: "#64748B", bg: "bg-slate-500/20",   text: "text-slate-300" },
+  "Creative":   { hex: "#EC4899", bg: "bg-pink-500/20",    text: "text-pink-300" },
+  "Fitness":    { hex: "#10B981", bg: "bg-green-500/20",   text: "text-green-300" },
+  "Admin":      { hex: "#F59E0B", bg: "bg-amber-500/20",   text: "text-amber-300" },
+  "Other":      { hex: "#6B7280", bg: "bg-gray-500/20",    text: "text-gray-300" },
+};
+
 function getWeekStart(date = new Date()) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -258,12 +269,21 @@ export default function Dashboard() {
               <PieChart>
                 <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
                   {categoryData.map((entry, idx) => (
-                    <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                    <Cell key={`cell-${idx}`} fill={categoryColorMap[entry.name]?.hex || "#6B7280"} />
                   ))}
                 </Pie>
                 <ReTooltip />
               </PieChart>
             </ResponsiveContainer>
+            {/* Category Color Legend */}
+            <div className="flex flex-wrap gap-2 justify-center mt-4">
+              {categories.map(cat => (
+                <div key={cat} className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${categoryColorMap[cat]?.bg || 'bg-gray-700/30'} ${categoryColorMap[cat]?.text || 'text-gray-200'}`} style={{ minWidth: 0 }}>
+                  <span className="w-3 h-3 rounded-full inline-block mr-1" style={{ background: categoryColorMap[cat]?.hex || '#6B7280', boxShadow: `0 0 6px 1px ${categoryColorMap[cat]?.hex || '#6B7280'}44` }}></span>
+                  {cat}
+                </div>
+              ))}
+            </div>
           </div>
           {/* Bar Chart */}
           <div className="col-span-1 bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-6 flex flex-col items-center border border-white/10">

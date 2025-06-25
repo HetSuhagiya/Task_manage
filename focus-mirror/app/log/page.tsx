@@ -6,6 +6,8 @@ import { FiTrash2, FiEdit2 } from "react-icons/fi";
 import { FaFire } from "react-icons/fa";
 import { useLockedTaskTimer } from "./useLockedTaskTimer";
 import toast, { Toaster } from 'react-hot-toast';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 
 const categories = [
   "Study",
@@ -35,6 +37,17 @@ const quotes = [
 const today = new Date();
 const quoteOfTheDay = quotes[(today.getFullYear() + today.getMonth() + today.getDate()) % quotes.length];
 
+// Category color mapping for badges
+const categoryColorMap: Record<string, { bg: string; text: string; shadow: string; hex: string }> = {
+  "Study":      { bg: "bg-blue-500/20",    text: "text-blue-300",    shadow: "shadow-blue-400/40", hex: "#3B82F6" },
+  "Job Search": { bg: "bg-purple-500/20",  text: "text-purple-300",  shadow: "shadow-purple-400/40", hex: "#8B5CF6" },
+  "Passive":    { bg: "bg-slate-500/20",   text: "text-slate-300",   shadow: "shadow-slate-400/40", hex: "#64748B" },
+  "Creative":   { bg: "bg-pink-500/20",    text: "text-pink-300",    shadow: "shadow-pink-400/40", hex: "#EC4899" },
+  "Fitness":    { bg: "bg-green-500/20",   text: "text-green-300",   shadow: "shadow-green-400/40", hex: "#10B981" },
+  "Admin":      { bg: "bg-amber-500/20",   text: "text-amber-300",   shadow: "shadow-amber-400/40", hex: "#F59E0B" },
+  "Other":      { bg: "bg-gray-500/20",    text: "text-gray-300",    shadow: "shadow-gray-400/40", hex: "#6B7280" },
+};
+
 export default function LogPage() {
   const [logs, setLogs] = useState<any[] | undefined>(undefined);
   const [completedLogs, setCompletedLogs] = useState<any[]>(() => {
@@ -56,6 +69,8 @@ export default function LogPage() {
     category: categories[0],
     focus: 3,
     value: valueTags[1],
+    steps: "",
+    nextAction: "",
   });
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -81,6 +96,9 @@ export default function LogPage() {
   });
   const chimeRef = useRef<HTMLAudioElement | null>(null);
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsModal, setDetailsModal] = useState<{ open: boolean, log?: any }>({ open: false });
+
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -97,7 +115,7 @@ export default function LogPage() {
       ...logs || [],
       { ...form, id: Date.now() },
     ]);
-    setForm({ task: "", duration: "", category: categories[0], focus: 3, value: valueTags[1] });
+    setForm({ task: "", duration: "", category: categories[0], focus: 3, value: valueTags[1], steps: "", nextAction: "" });
   };
 
   const handleDelete = (id: number) => {
@@ -364,6 +382,49 @@ export default function LogPage() {
               </motion.div>
             </motion.button>
           </div>
+          {/* Collapsible Details Section */}
+          <div className="mt-2">
+            <button
+              type="button"
+              className="text-blue-300 text-sm flex items-center gap-1 hover:text-blue-200 focus:outline-none"
+              onClick={() => setDetailsOpen((v) => !v)}
+              aria-expanded={detailsOpen}
+            >
+              <span className="text-lg font-bold">{detailsOpen ? "−" : "+"}</span> Add Details
+            </button>
+            <AnimatePresence initial={false}>
+              {detailsOpen && (
+                <motion.div
+                  key="details"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                  className="overflow-hidden mt-2"
+                >
+                  <div className="flex flex-col gap-3 bg-black/30 rounded-xl p-4 border border-blue-900/30">
+                    <label className="text-blue-200 text-xs mb-1">Steps (optional)</label>
+                    <textarea
+                      name="steps"
+                      value={form.steps}
+                      onChange={handleChange}
+                      rows={3}
+                      className="px-3 py-2 rounded-lg bg-black/40 text-blue-100 border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400 resize-y min-h-[60px]"
+                      placeholder="Outline steps or intentions for this task..."
+                    />
+                    <label className="text-blue-200 text-xs mb-1 mt-2">Next Action</label>
+                    <input
+                      name="nextAction"
+                      value={form.nextAction}
+                      onChange={handleChange}
+                      className="px-3 py-2 rounded-lg bg-black/40 text-blue-100 border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+                      placeholder="If unfinished, what's the next step?"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <div className="text-blue-300 text-sm mt-2 text-center">Nice! Logging focus helps you stay intentional.</div>
         </motion.form>
         <motion.div
@@ -374,6 +435,15 @@ export default function LogPage() {
         >
           “{quoteOfTheDay}”
         </motion.div>
+        {/* Category Color Legend */}
+        <div className="flex flex-wrap gap-2 justify-center mt-6 mb-2">
+          {categories.map(cat => (
+            <div key={cat} className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${categoryColorMap[cat]?.bg || 'bg-gray-700/30'} ${categoryColorMap[cat]?.text || 'text-gray-200'}`} style={{ minWidth: 0 }}>
+              <span className="w-3 h-3 rounded-full inline-block mr-1" style={{ background: categoryColorMap[cat]?.bg.replace('bg-', '').replace('/20', ''), boxShadow: `0 0 6px 1px ${categoryColorMap[cat]?.hex || '#6B7280'}44` }}></span>
+              {cat}
+            </div>
+          ))}
+        </div>
         {/* Entries */}
         <section className="w-full max-w-6xl z-10 relative mt-2">
           <div className="overflow-x-auto rounded-2xl shadow-lg border border-white/10 bg-white/5 backdrop-blur-md">
@@ -403,7 +473,10 @@ export default function LogPage() {
                     return (
                       <tr
                         key={log.id}
-                        className={`transition-all duration-200 border-b border-white/10 hover:bg-blue-900/20 ${isActive ? "ring-2 ring-blue-400/60 bg-blue-900/30" : ""}`}
+                        className={`transition-all duration-200 border-b border-white/10 hover:bg-blue-900/20
+                          ${isActive ? `ring-2 ${categoryColorMap[log.category]?.shadow || 'ring-blue-400/60'} bg-blue-900/30` : ''}`}
+                        onClick={() => (!isEditing && (log.steps || log.nextAction)) ? setDetailsModal({ open: true, log }) : undefined}
+                        style={{ cursor: (!isEditing && (log.steps || log.nextAction)) ? 'pointer' : undefined }}
                       >
                         {/* Task Name with tooltip or input */}
                         <td className="px-4 py-2 max-w-[260px] align-middle">
@@ -448,14 +521,40 @@ export default function LogPage() {
                         {/* Timer */}
                         <td className="px-2 py-2 text-center align-middle">
                           {isActive && !isEditing && (
-                            <motion.span
-                              className="px-2 py-1 rounded bg-blue-700/60 text-blue-100 font-mono text-xs md:text-sm shadow animate-pulse min-w-[70px] text-center"
-                              initial={{ scale: 0.9, opacity: 0.7 }}
-                              animate={{ scale: [0.9, 1.05, 0.98, 1], opacity: [0.7, 1, 0.7] }}
-                              transition={{ duration: 1.2, repeat: Infinity }}
-                            >
-                              +{Math.floor(Math.min(elapsed, durationSec) / 60)} min {Math.min(elapsed, durationSec) % 60 > 0 ? `${Math.min(elapsed, durationSec) % 60} sec` : "active"}
-                            </motion.span>
+                            <div className="flex items-center justify-center gap-2">
+                              <svg width="28" height="28" viewBox="0 0 28 28">
+                                <defs>
+                                  <linearGradient id="timer-gradient" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stopColor="#60a5fa" />
+                                    <stop offset="100%" stopColor="#818cf8" />
+                                  </linearGradient>
+                                </defs>
+                                <circle
+                                  cx="14" cy="14" r="12"
+                                  fill="none"
+                                  stroke="#1e293b"
+                                  strokeWidth="4"
+                                />
+                                <circle
+                                  cx="14" cy="14" r="12"
+                                  fill="none"
+                                  stroke="url(#timer-gradient)"
+                                  strokeWidth="4"
+                                  strokeDasharray={2 * Math.PI * 12}
+                                  strokeDashoffset={(1 - Math.min(elapsed / durationSec, 1)) * 2 * Math.PI * 12}
+                                  strokeLinecap="round"
+                                  style={{ filter: 'drop-shadow(0 0 4px #60a5fa88)' }}
+                                />
+                              </svg>
+                              <motion.span
+                                className="px-2 py-1 rounded bg-blue-700/60 text-blue-100 font-mono text-xs md:text-sm shadow animate-pulse min-w-[70px] text-center"
+                                initial={{ scale: 0.9, opacity: 0.7 }}
+                                animate={{ scale: [0.9, 1.05, 0.98, 1], opacity: [0.7, 1, 0.7] }}
+                                transition={{ duration: 1.2, repeat: Infinity }}
+                              >
+                                +{Math.floor(Math.min(elapsed, durationSec) / 60)} min {Math.min(elapsed, durationSec) % 60 > 0 ? `${Math.min(elapsed, durationSec) % 60} sec` : "active"}
+                              </motion.span>
+                            </div>
                           )}
                         </td>
                         {/* Duration */}
@@ -487,7 +586,18 @@ export default function LogPage() {
                               ))}
                             </select>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-200 font-bold text-xs text-center w-[80px] inline-block truncate" title={log.category}>{log.category}</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full font-bold text-xs text-center w-[80px] inline-block truncate
+                                ${categoryColorMap[log.category]?.bg || "bg-gray-700/30"}
+                                ${categoryColorMap[log.category]?.text || "text-gray-200"}
+                                ring-1 ring-inset
+                                ${categoryColorMap[log.category]?.shadow || "shadow-none"}
+                                shadow-md`}
+                              title={log.category}
+                              style={{ filter: 'brightness(1.1)' }}
+                            >
+                              {log.category}
+                            </span>
                           )}
                         </td>
                         {/* Focus */}
@@ -549,7 +659,7 @@ export default function LogPage() {
                                 <motion.button
                                   whileHover={{ scale: 1.15, color: "#f87171" }}
                                   className="p-2 rounded-full hover:bg-red-500/20 transition flex items-center justify-center"
-                                  onClick={() => handleDelete(log.id)}
+                                  onClick={e => { e.stopPropagation(); handleDelete(log.id); }}
                                   aria-label="Delete entry"
                                   disabled={isActive}
                                 >
@@ -559,7 +669,7 @@ export default function LogPage() {
                                   whileHover={{ scale: 1.15, color: "#60a5fa" }}
                                   className="p-2 rounded-full hover:bg-blue-500/20 transition flex items-center justify-center"
                                   aria-label="Edit entry"
-                                  onClick={() => handleEdit(log)}
+                                  onClick={e => { e.stopPropagation(); handleEdit(log); }}
                                   disabled={isActive}
                                 >
                                   <FiEdit2 className="text-lg text-blue-300" />
@@ -621,7 +731,18 @@ export default function LogPage() {
                         <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-200 font-bold text-xs text-center w-[80px] inline-block truncate" title={`${log.duration} min`}>⏱ {log.duration} min</span>
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
-                        <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-200 font-bold text-xs text-center w-[80px] inline-block truncate" title={log.category}>{log.category}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-bold text-xs text-center w-[80px] inline-block truncate
+                            ${categoryColorMap[log.category]?.bg || "bg-gray-700/30"}
+                            ${categoryColorMap[log.category]?.text || "text-gray-200"}
+                            ring-1 ring-inset
+                            ${categoryColorMap[log.category]?.shadow || "shadow-none"}
+                            shadow-md`}
+                          title={log.category}
+                          style={{ filter: 'brightness(1.1)' }}
+                        >
+                          {log.category}
+                        </span>
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
                         <span className="px-2 py-0.5 rounded-full bg-indigo-900/40 text-indigo-200 font-bold flex items-center gap-1 text-xs w-[70px] text-center inline-flex truncate" title={`Focus: ${log.focus}`}>{focusEmojis[log.focus - 1]} {log.focus}/5</span>
@@ -640,6 +761,40 @@ export default function LogPage() {
           </div>
         </section>
       </div>
+      {/* Details Modal */}
+      {detailsModal.open && detailsModal.log && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDetailsModal({ open: false })}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="bg-[#181c2b] rounded-2xl shadow-2xl border border-blue-700/40 p-6 min-w-[320px] max-w-[90vw] text-blue-100 relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="text-lg font-bold text-blue-200 mb-2">Task Details</div>
+            {detailsModal.log.steps && (
+              <div className="mb-3">
+                <div className="text-xs text-blue-300 mb-1 font-semibold">Steps</div>
+                <div className="whitespace-pre-line text-blue-100 bg-black/30 rounded p-2 border border-blue-900/30 text-sm">{detailsModal.log.steps}</div>
+              </div>
+            )}
+            {detailsModal.log.nextAction && (
+              <div className="mb-2">
+                <div className="text-xs text-blue-300 mb-1 font-semibold">Next Action</div>
+                <div className="text-blue-100 bg-black/30 rounded p-2 border border-blue-900/30 text-sm">{detailsModal.log.nextAction}</div>
+              </div>
+            )}
+            <button
+              className="absolute top-2 right-2 text-blue-300 hover:text-blue-100 text-xl font-bold focus:outline-none"
+              onClick={() => setDetailsModal({ open: false })}
+              aria-label="Close details"
+            >
+              ×
+            </button>
+          </motion.div>
+        </div>
+      )}
       <style jsx global>{`
 @keyframes glow {
   0% { box-shadow: 0 0 8px 2px #6366f1aa; }
