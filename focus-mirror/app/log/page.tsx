@@ -48,6 +48,16 @@ const categoryColorMap: Record<string, { bg: string; text: string; shadow: strin
   "Other":      { bg: "bg-gray-500/20",    text: "text-gray-300",    shadow: "shadow-gray-400/40", hex: "#6B7280" },
 };
 
+// Helper to get current date and time in suitable formats
+function getTodayDateStr() {
+  const now = new Date();
+  return now.toISOString().slice(0,10); // yyyy-mm-dd
+}
+function getCurrentTimeStr() {
+  const now = new Date();
+  return now.toTimeString().slice(0,5); // HH:mm
+}
+
 export default function LogPage() {
   const [logs, setLogs] = useState<any[] | undefined>(undefined);
   const [completedLogs, setCompletedLogs] = useState<any[]>(() => {
@@ -71,6 +81,8 @@ export default function LogPage() {
     value: valueTags[1],
     steps: "",
     nextAction: "",
+    startDate: getTodayDateStr(),
+    startTime: getCurrentTimeStr(),
   });
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -111,11 +123,13 @@ export default function LogPage() {
     e.preventDefault();
     setAdding(true);
     setTimeout(() => setAdding(false), 400);
+    // Combine date and time into ISO string
+    const start = new Date(`${form.startDate}T${form.startTime}`).toISOString();
     setLogs([
       ...logs || [],
-      { ...form, id: Date.now() },
+      { ...form, id: Date.now(), start },
     ]);
-    setForm({ task: "", duration: "", category: categories[0], focus: 3, value: valueTags[1], steps: "", nextAction: "" });
+    setForm({ task: "", duration: "", category: categories[0], focus: 3, value: valueTags[1], steps: "", nextAction: "", startDate: getTodayDateStr(), startTime: getCurrentTimeStr() });
   };
 
   const handleDelete = (id: number) => {
@@ -252,19 +266,20 @@ export default function LogPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/dashboard" passHref legacyBehavior>
-              <a className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 text-white font-semibold shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <motion.span
-                  whileHover={{ scale: 1.06, boxShadow: "0 0 0 2px #6366f1, 0 4px 24px #6366f1aa" }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  style={{ display: "inline-block" }}
-                >
-                  See Dashboard
-                </motion.span>
+              <a className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
+                style={{ boxShadow: '0 1px 4px 0 #00000022' }}>
+                See Dashboard
               </a>
             </Link>
-            <motion.button
-              whileHover={{ scale: 1.06, boxShadow: "0 0 0 2px #444" }}
-              className="px-4 py-2 rounded-full border border-gray-600 text-gray-200 font-semibold bg-black/30 hover:bg-gray-800/60 transition-all shadow-sm"
+            <Link href="/calendar-view" passHref legacyBehavior>
+              <a className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
+                style={{ boxShadow: '0 1px 4px 0 #00000022' }}>
+                Calendar View
+              </a>
+            </Link>
+            <button
+              className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
+              style={{ boxShadow: '0 1px 4px 0 #00000022' }}
               onClick={() => {
                 if (window.confirm('Are you sure you want to clear all logs for this week?')) {
                   setLogs([]);
@@ -272,7 +287,7 @@ export default function LogPage() {
               }}
             >
               Clear Week
-            </motion.button>
+            </button>
           </div>
         </div>
         {/* Input Card */}
@@ -321,6 +336,28 @@ export default function LogPage() {
                 ))}
               </select>
             </div>
+            <div className="flex flex-col">
+              <label className="text-gray-200 text-sm mb-1">Start Date</label>
+              <input
+                name="startDate"
+                type="date"
+                value={form.startDate}
+                onChange={handleChange}
+                required
+                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-200 text-sm mb-1">Start Time</label>
+              <input
+                name="startTime"
+                type="time"
+                value={form.startTime}
+                onChange={handleChange}
+                required
+                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div className="flex flex-col md:col-span-2">
@@ -362,9 +399,9 @@ export default function LogPage() {
             </div>
             <motion.button
               type="submit"
-              whileTap={{ scale: 0.97, boxShadow: "0 0 0 4px #6366f1" }}
-              whileHover={{ scale: 1.03, boxShadow: "0 0 0 4px #6366f1" }}
-              className="md:col-span-2 w-full px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 text-white font-semibold text-lg shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 mt-4 md:mt-0 relative"
+              whileTap={{ scale: 0.97, boxShadow: "0 0 0 2px #23272f" }}
+              whileHover={{ scale: 1.03, boxShadow: "0 2px 8px 0 #23272f55" }}
+              className="md:col-span-2 w-full px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40 mt-4 md:mt-0 relative"
               animate={adding ? { scale: [1, 1.05, 0.98, 1] } : {}}
               transition={{ duration: 0.4 }}
               onMouseEnter={() => setAddHover(true)}
