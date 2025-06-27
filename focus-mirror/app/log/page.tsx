@@ -8,6 +8,7 @@ import { useLockedTaskTimer } from "./useLockedTaskTimer";
 import toast, { Toaster } from 'react-hot-toast';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import StickyNotesPanel from "../StickyNotesPanel";
 
 const categories = [
   "Study",
@@ -264,206 +265,213 @@ export default function LogPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">Time Log</h1>
             <div className="text-gray-400 text-sm md:text-base">Log what you did, how long it took, and how valuable it felt.</div>
           </div>
-          <div className="flex gap-2">
-            <Link href="/dashboard" passHref legacyBehavior>
-              <a className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
-                style={{ boxShadow: '0 1px 4px 0 #00000022' }}>
-                See Dashboard
-              </a>
-            </Link>
-            <Link href="/calendar-view" passHref legacyBehavior>
-              <a className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
-                style={{ boxShadow: '0 1px 4px 0 #00000022' }}>
-                Calendar View
-              </a>
-            </Link>
-            <button
-              className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
-              style={{ boxShadow: '0 1px 4px 0 #00000022' }}
-              onClick={() => {
-                if (window.confirm('Are you sure you want to clear all logs for this week?')) {
-                  setLogs([]);
-                }
-              }}
-            >
-              Clear Week
-            </button>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex gap-2">
+              <Link href="/dashboard" passHref legacyBehavior>
+                <a className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
+                  style={{ boxShadow: '0 1px 4px 0 #00000022' }}>
+                  See Dashboard
+                </a>
+              </Link>
+              <Link href="/calendar-view" passHref legacyBehavior>
+                <a className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
+                  style={{ boxShadow: '0 1px 4px 0 #00000022' }}>
+                  Calendar View
+                </a>
+              </Link>
+              <button
+                className="px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40"
+                style={{ boxShadow: '0 1px 4px 0 #00000022' }}
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to clear all logs for this week?')) {
+                    setLogs([]);
+                  }
+                }}
+              >
+                Clear Week
+              </button>
+            </div>
           </div>
         </div>
-        {/* Input Card */}
-        <motion.form
-          onSubmit={handleAdd}
-          className="relative z-10 w-full max-w-2xl mt-6 mb-8 p-6 md:p-8 rounded-2xl bg-white/10 backdrop-blur-md shadow-2xl border border-white/10 flex flex-col gap-4"
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="md:col-span-2 flex flex-col">
-              <label className="text-gray-200 text-sm mb-1">Task Name</label>
-              <input
-                name="task"
-                value={form.task}
-                onChange={handleChange}
-                required
-                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
-                placeholder="e.g. Calculus review"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-gray-200 text-sm mb-1">Duration (min)</label>
-              <input
-                name="duration"
-                type="number"
-                min="1"
-                value={form.duration}
-                onChange={handleChange}
-                required
-                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
-                placeholder="45"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-gray-200 text-sm mb-1">Category</label>
-              <select
-                name="category"
-                value={form.category}
-                onChange={handleChange}
-                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition"
-              >
-                {categories.map((cat) => (
-                  <option key={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <label className="text-gray-200 text-sm mb-1">Start Date</label>
-              <input
-                name="startDate"
-                type="date"
-                value={form.startDate}
-                onChange={handleChange}
-                required
-                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-gray-200 text-sm mb-1">Start Time</label>
-              <input
-                name="startTime"
-                type="time"
-                value={form.startTime}
-                onChange={handleChange}
-                required
-                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-            <div className="flex flex-col md:col-span-2">
-              <label className="text-gray-200 text-sm mb-1">Focus</label>
-              <div className="flex items-center justify-between gap-2 w-full mt-1 mb-2">
-                {focusLevels.map((level, i) => (
-                  <motion.button
-                    key={i}
-                    type="button"
-                    onClick={() => handleFocusChange(i + 1)}
-                    whileTap={{ scale: 0.92 }}
-                    className={`flex flex-col items-center justify-center w-10 h-10 rounded-full border transition-all
-                      ${form.focus === i + 1
-                        ? "bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-blue-400/60"
-                        : "bg-black/30 border-gray-700 text-gray-500 hover:bg-gray-700/60"}
-                    `}
-                    aria-label={`Focus level ${i + 1}`}
-                  >
-                    <span className="text-lg">
-                      {level.icon}
-                    </span>
-                  </motion.button>
-                ))}
+        {/* Input Card + Sticky Notes Row */}
+        <div className="w-full flex flex-col md:flex-row gap-6 items-start mt-6 mb-8">
+          <motion.form
+            onSubmit={handleAdd}
+            className="relative z-10 w-full max-w-2xl p-6 md:p-8 rounded-2xl bg-white/10 backdrop-blur-md shadow-2xl border border-white/10 flex flex-col gap-4"
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="md:col-span-2 flex flex-col">
+                <label className="text-gray-200 text-sm mb-1">Task Name</label>
+                <input
+                  name="task"
+                  value={form.task}
+                  onChange={handleChange}
+                  required
+                  className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+                  placeholder="e.g. Calculus review"
+                />
               </div>
-              <div className="text-xs text-blue-300 text-center min-h-[1.5em]">{focusLevels[form.focus - 1].label}</div>
-            </div>
-            <div className="flex flex-col">
-              <label className="text-gray-200 text-sm mb-1">Value</label>
-              <select
-                name="value"
-                value={form.value}
-                onChange={handleChange}
-                className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition"
-              >
-                {valueTags.map((tag) => (
-                  <option key={tag}>{tag}</option>
-                ))}
-              </select>
-            </div>
-            <motion.button
-              type="submit"
-              whileTap={{ scale: 0.97, boxShadow: "0 0 0 2px #23272f" }}
-              whileHover={{ scale: 1.03, boxShadow: "0 2px 8px 0 #23272f55" }}
-              className="md:col-span-2 w-full px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40 mt-4 md:mt-0 relative"
-              animate={adding ? { scale: [1, 1.05, 0.98, 1] } : {}}
-              transition={{ duration: 0.4 }}
-              onMouseEnter={() => setAddHover(true)}
-              onMouseLeave={() => setAddHover(false)}
-            >
-              Add Entry
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={addHover ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                transition={{ duration: 0.3 }}
-                className="absolute left-1/2 -translate-x-1/2 mt-2 text-blue-200 text-sm pointer-events-none whitespace-nowrap"
-                style={{ bottom: '-2.5rem' }}
-              >
-                <span className="mr-1">{encouragement.icon}</span>{encouragement.text}
-              </motion.div>
-            </motion.button>
-          </div>
-          {/* Collapsible Details Section */}
-          <div className="mt-2">
-            <button
-              type="button"
-              className="text-blue-300 text-sm flex items-center gap-1 hover:text-blue-200 focus:outline-none"
-              onClick={() => setDetailsOpen((v) => !v)}
-              aria-expanded={detailsOpen}
-            >
-              <span className="text-lg font-bold">{detailsOpen ? "−" : "+"}</span> Add Details
-            </button>
-            <AnimatePresence initial={false}>
-              {detailsOpen && (
-                <motion.div
-                  key="details"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
-                  className="overflow-hidden mt-2"
+              <div className="flex flex-col">
+                <label className="text-gray-200 text-sm mb-1">Duration (min)</label>
+                <input
+                  name="duration"
+                  type="number"
+                  min="1"
+                  value={form.duration}
+                  onChange={handleChange}
+                  required
+                  className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+                  placeholder="45"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="text-gray-200 text-sm mb-1">Category</label>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition"
                 >
-                  <div className="flex flex-col gap-3 bg-black/30 rounded-xl p-4 border border-blue-900/30">
-                    <label className="text-blue-200 text-xs mb-1">Steps (optional)</label>
-                    <textarea
-                      name="steps"
-                      value={form.steps}
-                      onChange={handleChange}
-                      rows={3}
-                      className="px-3 py-2 rounded-lg bg-black/40 text-blue-100 border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400 resize-y min-h-[60px]"
-                      placeholder="Outline steps or intentions for this task..."
-                    />
-                    <label className="text-blue-200 text-xs mb-1 mt-2">Next Action</label>
-                    <input
-                      name="nextAction"
-                      value={form.nextAction}
-                      onChange={handleChange}
-                      className="px-3 py-2 rounded-lg bg-black/40 text-blue-100 border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
-                      placeholder="If unfinished, what's the next step?"
-                    />
-                  </div>
+                  {categories.map((cat) => (
+                    <option key={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label className="text-gray-200 text-sm mb-1">Start Date</label>
+                <input
+                  name="startDate"
+                  type="date"
+                  value={form.startDate}
+                  onChange={handleChange}
+                  required
+                  className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="text-gray-200 text-sm mb-1">Start Time</label>
+                <input
+                  name="startTime"
+                  type="time"
+                  value={form.startTime}
+                  onChange={handleChange}
+                  required
+                  className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+              <div className="flex flex-col md:col-span-2">
+                <label className="text-gray-200 text-sm mb-1">Focus</label>
+                <div className="flex items-center justify-between gap-2 w-full mt-1 mb-2">
+                  {focusLevels.map((level, i) => (
+                    <motion.button
+                      key={i}
+                      type="button"
+                      onClick={() => handleFocusChange(i + 1)}
+                      whileTap={{ scale: 0.92 }}
+                      className={`flex flex-col items-center justify-center w-10 h-10 rounded-full border transition-all
+                        ${form.focus === i + 1
+                          ? "bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-blue-400/60"
+                          : "bg-black/30 border-gray-700 text-gray-500 hover:bg-gray-700/60"}
+                      `}
+                      aria-label={`Focus level ${i + 1}`}
+                    >
+                      <span className="text-lg">
+                        {level.icon}
+                      </span>
+                    </motion.button>
+                  ))}
+                </div>
+                <div className="text-xs text-blue-300 text-center min-h-[1.5em]">{focusLevels[form.focus - 1].label}</div>
+              </div>
+              <div className="flex flex-col">
+                <label className="text-gray-200 text-sm mb-1">Value</label>
+                <select
+                  name="value"
+                  value={form.value}
+                  onChange={handleChange}
+                  className="px-3 py-2 rounded-lg bg-black/40 text-white border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                >
+                  {valueTags.map((tag) => (
+                    <option key={tag}>{tag}</option>
+                  ))}
+                </select>
+              </div>
+              <motion.button
+                type="submit"
+                whileTap={{ scale: 0.97, boxShadow: "0 0 0 2px #23272f" }}
+                whileHover={{ scale: 1.03, boxShadow: "0 2px 8px 0 #23272f55" }}
+                className="md:col-span-2 w-full px-4 py-2 rounded-lg bg-white border border-[#2a2a2a] text-black font-medium shadow-sm transition-colors duration-150 ease-in-out hover:bg-[#f3f3f3] hover:shadow-lg active:bg-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-blue-700/40 mt-4 md:mt-0 relative"
+                animate={adding ? { scale: [1, 1.05, 0.98, 1] } : {}}
+                transition={{ duration: 0.4 }}
+                onMouseEnter={() => setAddHover(true)}
+                onMouseLeave={() => setAddHover(false)}
+              >
+                Add Entry
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={addHover ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute left-1/2 -translate-x-1/2 mt-2 text-blue-200 text-sm pointer-events-none whitespace-nowrap"
+                  style={{ bottom: '-2.5rem' }}
+                >
+                  <span className="mr-1">{encouragement.icon}</span>{encouragement.text}
                 </motion.div>
-              )}
-            </AnimatePresence>
+              </motion.button>
+            </div>
+            {/* Collapsible Details Section */}
+            <div className="mt-2">
+              <button
+                type="button"
+                className="text-blue-300 text-sm flex items-center gap-1 hover:text-blue-200 focus:outline-none"
+                onClick={() => setDetailsOpen((v) => !v)}
+                aria-expanded={detailsOpen}
+              >
+                <span className="text-lg font-bold">{detailsOpen ? "−" : "+"}</span> Add Details
+              </button>
+              <AnimatePresence initial={false}>
+                {detailsOpen && (
+                  <motion.div
+                    key="details"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.35, ease: "easeInOut" }}
+                    className="overflow-hidden mt-2"
+                  >
+                    <div className="flex flex-col gap-3 bg-black/30 rounded-xl p-4 border border-blue-900/30">
+                      <label className="text-blue-200 text-xs mb-1">Steps (optional)</label>
+                      <textarea
+                        name="steps"
+                        value={form.steps}
+                        onChange={handleChange}
+                        rows={3}
+                        className="px-3 py-2 rounded-lg bg-black/40 text-blue-100 border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400 resize-y min-h-[60px]"
+                        placeholder="Outline steps or intentions for this task..."
+                      />
+                      <label className="text-blue-200 text-xs mb-1 mt-2">Next Action</label>
+                      <input
+                        name="nextAction"
+                        value={form.nextAction}
+                        onChange={handleChange}
+                        className="px-3 py-2 rounded-lg bg-black/40 text-blue-100 border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition placeholder:text-gray-400"
+                        placeholder="If unfinished, what's the next step?"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="text-blue-300 text-sm mt-2 text-center">Nice! Logging focus helps you stay intentional.</div>
+          </motion.form>
+          <div className="w-full md:w-[260px] flex-shrink-0">
+            <StickyNotesPanel />
           </div>
-          <div className="text-blue-300 text-sm mt-2 text-center">Nice! Logging focus helps you stay intentional.</div>
-        </motion.form>
+        </div>
         <motion.div
           className="text-blue-200 text-left italic text-base font-light mt-2 mb-2 pl-1"
           initial={{ opacity: 0, y: 10 }}
